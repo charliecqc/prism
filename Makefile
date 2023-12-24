@@ -1,7 +1,7 @@
 CC = gcc 
 CXX = g++ -std=c++17
 MEMMGR = -lpmem -lpmemobj -ljemalloc 
-CFLAGS = -g -O3 -Wno-all -Wno-invalid-offsetof -mcx16 -DNDEBUG -DBWTREE_NODEBUG -include masstree/config.h -latomic -luring -ltcmalloc
+CFLAGS = -g -O3 -Wno-all -Wno-invalid-offsetof -mcx16 -DNDEBUG -DBWTREE_NODEBUG -include masstree/config.h -latomic -ltcmalloc -luring
 SNAPPY = /usr/lib/libsnappy.so.1.3.0
 all: workload
 run_all: workload
@@ -25,7 +25,7 @@ workload.o: workload.cpp microbench.h index.h util.h ./papi_util.cpp ./PRISM/inc
 
 
 workload: workload.o bwtree.o ./masstree/mtIndexAPI.a PRISM/libMTS.a
-	$(CXX) $(CFLAGS) -o workload workload.o bwtree.o masstree/mtIndexAPI.a ./PRISM/libMTS.a ./PRISM/libtsoplog.a ./PRISM/libpactree.a ./PRISM/libpdlart.a $(MEMMGR) -lpthread -lm -ltbb -lnuma -latomic
+	$(CXX) $(CFLAGS) -o workload workload.o bwtree.o masstree/mtIndexAPI.a ./PRISM/libMTS.a ./PRISM/libtsoplog.a ./PRISM/libpactree.a ./PRISM/libpdlart.a $(MEMMGR) -lpthread -lm -ltbb -lnuma -latomic -luring
 
 
 clean:

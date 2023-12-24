@@ -28,7 +28,7 @@ WKLD_E_QD=(100)
 
 SVC_SIZE=(20)	    #Size of Scan-aware Value Cache
 PWB_SIZE=(16)	    #Size of Persistent Write Buffer
-DISK_NUM=(8)	    #The number of SSDs
+DISK_NUM=(1)	    #The number of SSDs
 
 KV_SIZE=(1024)	    #512 2048 4096
 PERF_MODE=(0 1)	    

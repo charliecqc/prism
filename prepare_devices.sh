@@ -60,7 +60,7 @@ modprobe nvme poll_queues=0
 sleep 1
 
 #highpoint raid ext4
-for SET in $(seq 0 7);
+for SET in $(seq 0 0);
 do
     NVME=$SET
     if [ $SET -gt 3 ]; then

@@ -30,6 +30,7 @@
 *.exe
 *.out
 *.app
+worload
 
 # PRISM
 *.out
@@ -41,3 +42,5 @@ competitors
 device_manager
 git_clean.sh
 artifact_evaluation/result/*
+.vscode/*
+build/*

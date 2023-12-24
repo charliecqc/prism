@@ -30,14 +30,14 @@
 #define MTS_OPLOG_LOW_MARK 0 
 
 /* Value Storage */
-#define MTS_VS_NUM 8
+#define MTS_VS_NUM 1
 #define MTS_VS_PATH "/mnt/hpt"
-#define MTS_VS_DISK_NUM 8
+#define MTS_VS_DISK_NUM 1
 #define MTS_VS_ENTRY_SIZE sizeof(vs_entry_t)
 #define MTS_VS_ENTRIES_PER_CHUNK (MTS_VS_CHUNK_SIZE / MTS_VS_ENTRY_SIZE) 
-#define MTS_VS_G_SIZE (MTS_VS_NUM * 512UL * 1024UL * 1024UL * 1024UL)
+#define MTS_VS_G_SIZE (MTS_VS_NUM * 128UL * 1024UL * 1024UL * 1024UL)
 #define MTS_VS_SIZE (MTS_VS_G_SIZE / MTS_VS_NUM)
-#define MTS_VS_CHUNK_SIZE (512UL * 1024UL)
+#define MTS_VS_CHUNK_SIZE (128UL * 1024UL)
 /* w/ io_uring, 512KB is the best size 128KB * QD(4) */
 #define MTS_VS_CHUNK_NUM (MTS_VS_SIZE / MTS_VS_CHUNK_SIZE)
 #define MTS_VS_HIGH_MARK (MTS_VS_CHUNK_NUM * 75 / 100)
