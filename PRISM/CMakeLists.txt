@@ -7,7 +7,8 @@ set(CMAKE_CXX_FLAGS "-pthread -Wall -Wextra -march=native")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wno-class-memaccess -Wno-attributes -Wno-unused-parameter -Wno-unused-value -Wno-packed-not-aligned -Wno-unused-variable -Wno-address-of-packed-member -mprfchw -Wno-unused-function")
 set(CMAKE_CXX_FLAGS_RELEASE "-g -O3 -Wno-all -march=native -mtune=native -mprfchw -ltcmalloc")
 
-add_definitions(-DMTS_STATS_LATENCY -DMTS_STATS_GET -DMTS_STATS_OPLOG_WAIT -DMTS_STATS_WAF)
+#add_definitions(-DMTS_STATS_LATENCY -DMTS_STATS_GET -DMTS_STATS_OPLOG_WAIT -DMTS_STATS_WAF)
+add_definitions(-DMTS_STATS_GET -DMTS_STATS_OPLOG_WAIT -DMTS_STATS_WAF)
 add_definitions("-DTS_NVM_IS_PMDK")
 add_definitions("-DTS_TRACE_LEVEL=TS_ERROR")
 

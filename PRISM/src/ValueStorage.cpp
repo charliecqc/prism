@@ -221,10 +221,8 @@ void ValueStorage::put_vs_entry(int oplog_id, Key_t key, Val_t val, at_entry_t *
     } else if(chunk->entry_offset == MTS_VS_ENTRIES_PER_CHUNK) {
 	write_chunk(chunk, NORMAL_WRITE);
 	sync_with_at(chunk->moved_entry_list, chunk->s_moved_entry_list);
-
-	init_w_chunk(oplog_id);
-
-	vs_entry_t vs_entry = alloc(key, val, at_entry);
+    init_w_chunk(oplog_id); 
+    vs_entry_t vs_entry = alloc(key, val, at_entry);
 	chunk->w_buffer[chunk->entry_offset] = vs_entry; 
 	add_moved_entry_list(chunk->moved_entry_list, chunk->chunk_offset, chunk->entry_offset,
 		(vs_entry_t *)&chunk->w_buffer[chunk->entry_offset], OpForm::INSERT);
@@ -925,18 +923,18 @@ void ValueStorage::write_chunk(w_chunk_t *chunk, bool write_type) {
     struct io_uring_cqe *w_cqe;
 
     do {
-	w_sqe = io_uring_get_sqe(&w_ring[ring_idx]);
-	if(!w_sqe) {
-	    ts_trace(TS_INFO, "[GET_VAL] write get set failed \n");
-	    break;
-	}
+	    w_sqe = io_uring_get_sqe(&w_ring[ring_idx]);
+	    if(!w_sqe) {
+	        ts_trace(TS_INFO, "[GET_VAL] write get set failed \n");
+	        break;
+	    }
 
-	io_uring_prep_write(w_sqe, fd[0], (void *)(vs_entry_t *)&w_buffer[array_num], MTS_VS_CHUNK_SIZE/W_QD, offset);
+	    io_uring_prep_write(w_sqe, fd[0], (void *)(vs_entry_t *)&w_buffer[array_num], MTS_VS_CHUNK_SIZE/W_QD, offset);
 
-	offset += MTS_VS_CHUNK_SIZE / W_QD;
-	array_num += MTS_VS_CHUNK_SIZE / W_QD / MTS_VS_ENTRY_SIZE;
-	submitted_io++;
-	ts_trace(TS_INFO, "[GET_VAL] offset %lu array_num %d submitted_io %d\n", offset, array_num, submitted_io);
+	    offset += MTS_VS_CHUNK_SIZE / W_QD;
+	    array_num += MTS_VS_CHUNK_SIZE / W_QD / MTS_VS_ENTRY_SIZE;
+	    submitted_io++;
+	    ts_trace(TS_INFO, "[GET_VAL] offset %lu array_num %d submitted_io %d\n", offset, array_num, submitted_io);
     } while (true);
 
     ret = io_uring_submit(&w_ring[ring_idx]);
@@ -948,15 +946,15 @@ void ValueStorage::write_chunk(w_chunk_t *chunk, bool write_type) {
     int pending = ret;
 
     ret = io_uring_wait_cqe_nr(&w_ring[ring_idx], &w_cqe, pending);
-    if(ret < 0) {
-	ts_trace(TS_ERROR, "io_uring_wait_cqe failed!\n");
-	exit(EXIT_FAILURE);
-    } else ts_trace(TS_INFO, "io_uring_wait_cqe successed!\n");
+        if(ret < 0) {
+	        ts_trace(TS_ERROR, "io_uring_wait_cqe failed!\n");
+	        exit(EXIT_FAILURE);
+        } else ts_trace(TS_INFO, "io_uring_wait_cqe successed!\n");
 
 
     for(i = 0; i < pending; i++) {
-	io_uring_cqe_seen(&w_ring[ring_idx], w_cqe);
-	ts_trace(TS_INFO, "[GET_VAL] ring_idx %d pending %d\n", ring_idx, i);
+	    io_uring_cqe_seen(&w_ring[ring_idx], w_cqe);
+	    ts_trace(TS_INFO, "[GET_VAL] ring_idx %d pending %d\n", ring_idx, i);
     }
 
 #ifdef MTS_STATS_WAF

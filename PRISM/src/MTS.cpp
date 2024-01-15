@@ -199,7 +199,7 @@ void MTSImpl::complete_pending_ios(ValueStorage *vs, int ring_idx) {
     std::vector<cq_entry_t *> *cq_entry_vec = new std::vector<cq_entry_t *>;
 
     for(entry_idx = 0; entry_idx < vs->pending_ios[ring_idx]; entry_idx++) {
-
+	try{
 	ret = io_uring_wait_cqe(&vs->r_ring[ring_idx], &r_cqe);
 	if(ret < 0) {
 	    ts_trace(TS_ERROR, "[GET_VAL_ASYNC] io_uring_wait_cqe failed! ret=%d %s\n", ret, strerror(-ret));
@@ -213,7 +213,11 @@ void MTSImpl::complete_pending_ios(ValueStorage *vs, int ring_idx) {
 
 	vs_entry = (vs_entry_t *)io_uring_cqe_get_data(r_cqe);
 	ts_trace(TS_INFO, "V lookup key %lu val %lu %p\n", vs_entry->key, vs_entry->val, vs_entry->at_entry);
-
+	}catch(const std::exception& e) {
+		ts_trace(TS_ERROR, "[GET_VAL_ASYNC] Error in async operation ret=%d, fd %d wanted READ_IO_SIZE: %s\n",
+		    r_cqe->res, vs->fd[0], e.what());
+	   	 exit(EXIT_FAILURE);
+	}
 #ifdef MTS_STATS_LATENCY
 	uint64_t start, end, elapsed_time;
 	at_entry_t *temp = vs_entry->at_entry;
@@ -262,16 +266,22 @@ uint64_t MTSImpl::complete_pending_ios(ValueStorage *vs, int ring_idx, int ops, 
     vs_entry_t *vs_entry;
 
     for(entry_idx = 0; entry_idx < vs->pending_ios[ring_idx]; entry_idx++) {
-	ret = io_uring_wait_cqe(&vs->r_ring[ring_idx], &r_cqe);
-	if(ret < 0) {
-	    ts_trace(TS_ERROR, "[GET_VAL_ASYNC] io_uring_wait_cqe failed! ret=%d %s\n", ret, strerror(-ret));
-	    exit(EXIT_FAILURE);
-	}
-	if(r_cqe->res < 0) { 
-	    ts_trace(TS_ERROR, "[GET_VAL_ASYNC] Error in async operation ret=%d, fd %d wanted READ_IO_SIZE: %s\n",
+	try {
+		ret = io_uring_wait_cqe(&vs->r_ring[ring_idx], &r_cqe);
+		if(ret < 0) {
+	    	ts_trace(TS_ERROR, "[GET_VAL_ASYNC] io_uring_wait_cqe failed! ret=%d %s\n", ret, strerror(-ret));
+	    	exit(EXIT_FAILURE);
+		}
+		if(r_cqe->res < 0) { 
+	    	ts_trace(TS_ERROR, "[GET_VAL_ASYNC] Error in async operation ret=%d, fd %d wanted READ_IO_SIZE: %s\n",
 		    r_cqe->res, vs->fd[0], strerror(-r_cqe->res));
-	    exit(EXIT_FAILURE);
-	}   
+	   	 exit(EXIT_FAILURE);
+		}
+	}catch(const std::exception& e) {
+		ts_trace(TS_ERROR, "[GET_VAL_ASYNC] Error in async operation ret=%d, fd %d wanted READ_IO_SIZE: %s\n",
+		    r_cqe->res, vs->fd[0], e.what());
+	   	 exit(EXIT_FAILURE);
+	}
 
 	vs_entry = (vs_entry_t *)io_uring_cqe_get_data(r_cqe);
 	ts_trace(TS_INFO, "V lookup key %lu val %lu %p\n", vs_entry->key, vs_entry->val, vs_entry->at_entry);
@@ -318,44 +328,44 @@ void MTSImpl::IOCompleterThreadExec(int init_id) {
     int ring_idx = 0;
 
     while(!ioc_scan) {
-	for(vs_id = init_id; vs_id < MTS_VS_NUM; vs_id += IO_COMPLETER_NUM) {
-	    ValueStorage *vs = g_perNumaValueStorage[vs_id];
-	    smp_mb();
-	    if(vs->pending_ios[ring_idx]) {
-		complete_pending_ios(vs, ring_idx);
-	    }
-	}
+		for(vs_id = init_id; vs_id < MTS_VS_NUM; vs_id += IO_COMPLETER_NUM) {
+	    	ValueStorage *vs = g_perNumaValueStorage[vs_id];
+	    	smp_mb();
+	    	if(vs->pending_ios[ring_idx]) {
+				complete_pending_ios(vs, ring_idx);
+	    	}
+		}
     }
 
     if(ioc_scan) {
-	ops = CT_SCAN;
+		ops = CT_SCAN;
 
-	while(!g_endMTS) {
-	    for(int ring_idx = init_id; ring_idx < IO_URING_RRING_NUM; ring_idx += IO_COMPLETER_NUM) {
-		std::vector<cq_entry_t *> *cq_entry_vec = new std::vector<cq_entry_t *>;
-		cq_entry_vec->reserve(R_QD);
-		for(vs_id = 0; vs_id < MTS_VS_NUM; vs_id++) {
-		    ValueStorage *vs = g_perNumaValueStorage[vs_id];
-		    smp_mb();
-		    if(vs->pending_ios[ring_idx]) {
-			complete_pending_ios(vs, ring_idx, ops, cq_entry_vec);
-		    }
-		}
+		while(!g_endMTS) {
+	    	for(int ring_idx = init_id; ring_idx < IO_URING_RRING_NUM; ring_idx += IO_COMPLETER_NUM) {
+				std::vector<cq_entry_t *> *cq_entry_vec = new std::vector<cq_entry_t *>;
+				cq_entry_vec->reserve(R_QD);
+				for(vs_id = 0; vs_id < MTS_VS_NUM; vs_id++) {
+		    		ValueStorage *vs = g_perNumaValueStorage[vs_id];
+		    		smp_mb();
+		    		if(vs->pending_ios[ring_idx]) {
+						complete_pending_ios(vs, ring_idx, ops, cq_entry_vec);
+		    		}
+				}
 
-		if(!cq_entry_vec->empty()) {
-		    int qid = ring_idx;
-		    while(true) {
-			if(smp_cas(&cqReady[qid], true, false)) {
-			    g_cacheQueue[qid].push(cq_entry_vec);
-			    smp_cas(&cqReady[qid], false, true);
-			    break;
-			}    
-		    }
-		} else {
-		    free(cq_entry_vec);
+				if(!cq_entry_vec->empty()) {
+		    		int qid = ring_idx;
+		    		while(true) {
+						if(smp_cas(&cqReady[qid], true, false)) {
+			    			g_cacheQueue[qid].push(cq_entry_vec);
+			    			smp_cas(&cqReady[qid], false, true);
+			    			break;
+						}    
+		    		}
+				} else {
+		    		free(cq_entry_vec);
+				}
+	    	}
 		}
-	    }
-	}
     }
 
     else {
@@ -381,7 +391,7 @@ void MTSImpl::createIOCompleterThread() {
     g_mutex_.lock();
     iocInitialized = false;
     for (int i = 0; i < IO_COMPLETER_NUM; i++) {
-	IOCompleterThread[i] = new std::thread(&MTSImpl::IOCompleterThreadExec, this, i);
+		IOCompleterThread[i] = new std::thread(&MTSImpl::IOCompleterThreadExec, this, i);
     }
     g_mutex_.unlock();
 }
@@ -407,43 +417,45 @@ MTSImpl::MTSImpl(int numNuma) {
     numThreads = 0;
 
     for (int i = 0; i < MTS_KEYINDEX_NUM; i++) {
-	g_perNumaKeyIndex[i] = MTSImpl::createKeyIndex();
-	sleep(1);
-	ts_trace(TS_INFO, "[PRISMImpl] Create KeyIndex %d\n", i);
+		g_perNumaKeyIndex[i] = MTSImpl::createKeyIndex();
+		sleep(1);
+		ts_trace(TS_ERROR, "[PRISMImpl] Create KeyIndex %d\n", i);
     }
-
+	// MTS_OPLOG_NUM = 32
     for (int i = 0; i < MTS_OPLOG_NUM; i++) {
-	if(i < (MTS_OPLOG_NUM / 2))
-	    sprintf(path, NVHEAP_POOL_PATH"0/prism/pwb%d", i);
-	else sprintf(path, NVHEAP_POOL_PATH"1/prism/pwb%d", i);
-	g_perNumaOpLog[i] = MTSImpl::createOpLog(path, i);
-	ts_trace(TS_INFO, "[PRISMImpl] Create PWB %d\n", i);
+		if(i < (MTS_OPLOG_NUM / 2))
+	    	sprintf(path, NVHEAP_POOL_PATH"0/prism/pwb%d", i);
+		else 
+			sprintf(path, NVHEAP_POOL_PATH"1/prism/pwb%d", i);
+		g_perNumaOpLog[i] = MTSImpl::createOpLog(path, i);
+		ts_trace(TS_ERROR, "[PRISMImpl] Create PWB %d\n", i);
     }
 
     for (int i = 0; i < MTS_AT_NUM; i++) {
-	if(i < (MTS_AT_NUM / 2))
-	    sprintf(path, MTS_AT_PATH"0/prism/hsit%d", i);
-	else sprintf(path, MTS_AT_PATH"1/prism/hsit%d", i);
-	g_perNumaAddressTable[i] = MTSImpl::createAddressTable(path, i);
-	ts_trace(TS_INFO, "[PRISMImpl] Create HIST %d\n", i);
+		if(i < (MTS_AT_NUM / 2))
+	    	sprintf(path, MTS_AT_PATH"0/prism/hsit%d", i);
+		else 
+			sprintf(path, MTS_AT_PATH"1/prism/hsit%d", i);
+		g_perNumaAddressTable[i] = MTSImpl::createAddressTable(path, i);
+		ts_trace(TS_INFO, "[PRISMImpl] Create HIST %d\n", i);
     }
 
     for(int i = 0; i < MTS_VS_NUM; i++) {
-	int partition = i % MTS_VS_DISK_NUM;
-	sprintf(path, MTS_VS_PATH"%d/prism/valuestorage%d", partition, i);
-	g_perNumaValueStorage[i] = MTSImpl::createValueStorage(path, i);
-	ts_trace(TS_INFO, "[PRISMImpl] Create ValueStorage %d\n", g_perNumaValueStorage[i]->get_vs_id());
+		int partition = i % MTS_VS_DISK_NUM;
+		sprintf(path, MTS_VS_PATH"%d/prism/valuestorage%d", partition, i);
+		g_perNumaValueStorage[i] = MTSImpl::createValueStorage(path, i);
+		ts_trace(TS_INFO, "[PRISMImpl] Create ValueStorage %d\n", g_perNumaValueStorage[i]->get_vs_id());
 
-	for(int ring_idx = 0; ring_idx < IO_URING_RRING_NUM; ring_idx++) {
-	    object_combiner[i][ring_idx] = (aio_struct_t *)get_aligned_memory(L1_CACHE_BYTES, sizeof(aio_struct_t));
-	    aio_struct_init(object_combiner[i][ring_idx]);
-	    object_combiner[i][ring_idx]->is_working = false;
-	}
+		for(int ring_idx = 0; ring_idx < IO_URING_RRING_NUM; ring_idx++) {
+	    	object_combiner[i][ring_idx] = (aio_struct_t *)get_aligned_memory(L1_CACHE_BYTES, sizeof(aio_struct_t));
+	    	aio_struct_init(object_combiner[i][ring_idx]);
+	    	object_combiner[i][ring_idx]->is_working = false;
+		}
     }
 
     for(int i = 0; i < MTS_THREAD_NUM; i++) {
-	th_state[i] = (aio_thread_state_t *)get_aligned_memory(L1_CACHE_BYTES, sizeof(aio_thread_state_t));
-	aio_thread_state_init(th_state[i]);
+		th_state[i] = (aio_thread_state_t *)get_aligned_memory(L1_CACHE_BYTES, sizeof(aio_thread_state_t));
+		aio_thread_state_init(th_state[i]);
     }
 
     ts_trace(TS_INFO, "[PRISMImpl] Create Cache-queue%d\n", MTS_DRAMCACHE_NUM);
@@ -451,7 +463,7 @@ MTSImpl::MTSImpl(int numNuma) {
     createIOCompleterThread();
 
     for(int i = 0; i < MTS_THREAD_NUM; i++)
-	g_phase[i] = 3;
+		g_phase[i] = 3;
 
     MTS_RESET_GET_COUNTERS();
 }
@@ -467,57 +479,57 @@ MTSImpl::~MTSImpl() {
     //terminate iocompletionthread
     g_mutex_.lock();
     for(int i = 0; i < IO_COMPLETER_NUM; i++) {
-	if(IOCompleterThread[i]->joinable()) {
-	    IOCompleterThread[i]->join();
-	    delete IOCompleterThread[i];
-	}
+		if(IOCompleterThread[i]->joinable()) {
+	    	IOCompleterThread[i]->join();
+	    	delete IOCompleterThread[i];
+		}
     }
     g_mutex_.unlock();
 
     for(auto mt : g_MTSThreadSet) {
-	while(true) {
-	    if(mt->getFinish()) {
-		g_mutex_.lock();
-		g_MTSThreadSet.erase(mt);
-		g_mutex_.unlock();
-		break;
-	    }
-	}
+		while(true) {
+	    	if(mt->getFinish()) {
+				g_mutex_.lock();
+				g_MTSThreadSet.erase(mt);
+				g_mutex_.unlock();
+				break;
+	    	}
+		}
     }
 
     // terminate cacheThread 
     g_mutex_.lock();
     for(int i = 0; i < MTS_DRAMCACHE_NUM; i++) {
-	if(DramCacheThread->joinable()) {
-	    DramCacheThread->join();
-	    delete DramCacheThread;
-	}
+		if(DramCacheThread->joinable()) {
+	    	DramCacheThread->join();
+	    	delete DramCacheThread;
+		}
     }
     g_mutex_.unlock();
     for(int i = 0; i < MTS_KEYINDEX_NUM; i++) {
-	delete g_perNumaKeyIndex[i];
+		delete g_perNumaKeyIndex[i];
     }
 
     for(int i = 0; i < MTS_AT_NUM; i++) {
-	delete g_perNumaAddressTable[i];
+		delete g_perNumaAddressTable[i];
     }
 
     for(int i = 0; i < MTS_OPLOG_NUM; i++) {
-	delete g_perNumaOpLog[i];
+		delete g_perNumaOpLog[i];
     }
 
     uint64_t vs_total_write_count = 0;
     uint64_t ol_total_write_count = 0;
 
     for(int i = 0; i < MTS_VS_NUM; i++) {
-	ts_trace(TS_INFO, "[~PRISMImpl] VS_ID: %d check_all_chunks()\n", g_perNumaValueStorage[i]->get_vs_id());
-	vs_total_write_count += g_perNumaValueStorage[i]->total_vs_write_count;
+		ts_trace(TS_INFO, "[~PRISMImpl] VS_ID: %d check_all_chunks()\n", g_perNumaValueStorage[i]->get_vs_id());
+		vs_total_write_count += g_perNumaValueStorage[i]->total_vs_write_count;
 
-	delete g_perNumaValueStorage[i];
+		delete g_perNumaValueStorage[i];
     }
 
     for(int i = 0; i < MTS_OPLOG_NUM; i++) {
-	ol_total_write_count += g_perNumaOpLog[i]->total_ol_write_count;
+		ol_total_write_count += g_perNumaOpLog[i]->total_ol_write_count;
     }
 
 #ifdef MTS_STATS_WAF
@@ -673,12 +685,11 @@ Val_t MTSImpl::lookup(Key_t &key) {
     ctInitialized = true;
     ioc_lookup = true;
     iocInitialized = true;
-
-    std::atomic<int> curThreadId = curMTSThread->getThreadId();
     Val_t val;
     int vs_id = 0;
     dc_entry_t *dc_entry;
     op_entry_t *op_entry;
+    int curThreadId = curMTSThread->getThreadId();
 
 #ifdef MTS_STATS_LATENCY
     uint64_t start, end;
@@ -689,8 +700,8 @@ Val_t MTSImpl::lookup(Key_t &key) {
     at_entry_t *at_entry = (at_entry_t *)keyindex.lookup(key);
 
     if((uintptr_t)at_entry == 0x0) {
-	ts_trace(TS_ERROR, "[LOOKUP] keyindex.lookup returns non-exist key :%lu\n", key);
-	return 0;
+		ts_trace(TS_ERROR, "[LOOKUP] keyindex.lookup returns non-exist key :%lu\n", key);
+		return 0;
     }
 
     INC_GET_CNT();

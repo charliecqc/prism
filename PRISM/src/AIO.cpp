@@ -27,10 +27,10 @@ int apply_ops(aio_struct_t *l, aio_thread_state_t *st_thread, at_entry_t *(*sfun
     st_thread->next = (aio_node_t *)cur;
 
     while (cur->locked) { // spinning
-	sched_yield();
+		sched_yield();
     }   
     if (cur->completed) { // Follower
-	return counter;
+		return counter;
     }
     p = cur; // Leader
 

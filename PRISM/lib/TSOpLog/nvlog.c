@@ -170,8 +170,9 @@ static ts_nvlog_store_t *_nvlog_store_create(unsigned long size,
 	pthread_mutex_lock(&nvlog_lock);
 
 #ifndef TS_NVM_IS_DRAM
+	ts_trace(TS_ERROR, "The log size is %d\n", size);
 	/* TODO: check if following code is crash-consistent. */
-	//ts_trace(TS_ERROR, "The sizeof(*nvlog_store): %lu\n", sizeof(*nvlog_store));
+	ts_trace(TS_ERROR, "The sizeof(*nvlog_store) 1: %lu\n", sizeof(*nvlog_store));
 	nvlog_store = (ts_nvlog_store_t *)nvm_alloc(sizeof(*nvlog_store));
 	//nvlog_store = (ts_nvlog_store_t *)nvm_aligned_alloc(L1_CACHE_BYTES, sizeof(*nvlog_store));
 	if (!nvlog_store) {
@@ -207,6 +208,7 @@ static ts_nvlog_store_t *_nvlog_store_create(unsigned long size,
 	 *			     |buff1|	    |buff2|	          |buffN|	*
 	 *			     +-----+	    +-----+	          +-----+	*
 	 ********************************************************************************/
+	ts_trace(TS_ERROR, "The sizeof(*nvlog_store) 2: %lu\n", size + TS_CACHE_LINE_SIZE);
 	nvlog_store->_buffer =
 	    (unsigned char *)nvm_alloc(size + TS_CACHE_LINE_SIZE);
 	    //(unsigned char *)nvm_aligned_alloc(L1_CACHE_BYTES, sizeof(*nvlog_store));
@@ -218,6 +220,7 @@ static ts_nvlog_store_t *_nvlog_store_create(unsigned long size,
 #else
 	nvlog_store = (ts_nvlog_store_t *)port_alloc(sizeof(*nvlog_store));
 	if (unlikely(!nvlog_store)) {
+	    ts_trace(TS_ERROR, "nvlog_store alloc failed with size %d\n", sizeof(*nvlog_store)));
 		goto err_out;
 	}
 	nvlog_store->_buffer =
@@ -226,6 +229,7 @@ static ts_nvlog_store_t *_nvlog_store_create(unsigned long size,
 #endif /* TS_NVM_IS_DRAM */
 
 	if (unlikely(!nvlog_store->_buffer)) {
+		ts_trace(TS_ERROR, "failed to allocate nvlog_store->_buffer\n");	
 		goto err_out;
 	}
 	nvlog_store->buffer =

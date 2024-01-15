@@ -6,8 +6,10 @@ extern std::vector<ValueStorage *> g_perNumaValueStorage;
 OpLog::OpLog(const char *path, int id) {
     nvm_root_obj = nvm_init_heap(path, NVHEAP_POOL_SIZE, &need_recovery);
     nvlog_init(nvm_root_obj);
-    oplog_create(NULL, &oplog1, MTS_OPLOG_SIZE, STATUS_NVLOG_NORMAL, 0);
-    oplog_create(NULL, &oplog2, MTS_OPLOG_SIZE, STATUS_NVLOG_NORMAL, 1);
+	ts_trace(TS_ERROR, "allocate size 1 %ld'\n", MTS_OPLOG_SIZE);
+    int ret1 = oplog_create(NULL, &oplog1, MTS_OPLOG_SIZE, STATUS_NVLOG_NORMAL, 0);
+    int ret2 = oplog_create(NULL, &oplog2, MTS_OPLOG_SIZE, STATUS_NVLOG_NORMAL, 1);
+	ts_trace(TS_ERROR, "ret1 = %d, ret2 = %d'\n", ret1, ret2);
 
     /* Enabling double-buffeing */
     oplog1.ready = true;
@@ -31,22 +33,22 @@ op_entry_t *OpLog::enq(Key_t key, Val_t val, int type) {
     op_entry_t *op_entry = put_ol_entry(*working_oplog, key, val);
 
     if(op_entry == NEED_RECLAIM) {
-	ts_trace(TS_INFO, "[ENQ] OPLOG RETURNS 'NEED_RECLAIM'\n");
-	if (reclaim_lock == true) {
-	    reclaim_thread->join();
-	    delete reclaim_thread;
-	}
+	    ts_trace(TS_INFO, "[ENQ] OPLOG RETURNS 'NEED_RECLAIM'\n");
+	    if (reclaim_lock == true) {
+	        reclaim_thread->join();
+	        delete reclaim_thread;
+	    }
 
-	reclaimed_oplog = working_oplog;
-	ts_trace(TS_INFO, "[ENQ] Reclaimed_oplog ID: %d, ready: %d | READY FOR RECLAIMING\n",
-		reclaimed_oplog->id, reclaimed_oplog->ready);
+	    reclaimed_oplog = working_oplog;
+	    ts_trace(TS_INFO, "[ENQ] Reclaimed_oplog ID: %d, ready: %d | READY FOR RECLAIMING\n",
+		    reclaimed_oplog->id, reclaimed_oplog->ready);
 
-	volatile int oplog_id = reclaimed_oplog->id;
-	reclaim_thread = new std::thread(&OpLog::reclaim, this, oplog_id);
-	pin_thread(reclaim_thread, g_oplog_id, MTS_THREAD_NUM);
+	    volatile int oplog_id = reclaimed_oplog->id;
+	    reclaim_thread = new std::thread(&OpLog::reclaim, this, oplog_id);
+	    pin_thread(reclaim_thread, g_oplog_id, MTS_THREAD_NUM);
 
-	working_oplog = get_another_oplog(reclaimed_oplog);
-	op_entry = put_ol_entry(*working_oplog, key, val);
+	    working_oplog = get_another_oplog(reclaimed_oplog);
+	    op_entry = put_ol_entry(*working_oplog, key, val);
     }
 
     return op_entry;
@@ -177,8 +179,8 @@ void OpLog::reclaim(volatile int oplog_id) {
     /* Persist oplog */
     ts_assert(oplog->head_cnt >= old_head_cnt);
     if (oplog->head_cnt != old_head_cnt) {
-	reclaimed_bytes = oplog->head_cnt - old_head_cnt;
-	ts_trace(TS_INFO, "Oplog[%p]: %ld bytes reclaimed (h=%ld, t=%ld)\n", oplog, reclaimed_bytes, oplog->head_cnt, oplog->tail_cnt);
+		reclaimed_bytes = oplog->head_cnt - old_head_cnt;
+		ts_trace(TS_INFO, "Oplog[%p]: %ld bytes reclaimed (h=%ld, t=%ld)\n", oplog, reclaimed_bytes, oplog->head_cnt, oplog->tail_cnt);
 
 	if(MTS_OPLOG_LOW_MARK == 0)
 	    oplog->head_cnt = oplog->tail_cnt = 0;

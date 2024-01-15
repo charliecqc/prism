@@ -42,7 +42,7 @@ public:
 	}
 
 	version_t write_lock(uint32_t genId) {
-	        version_t ver = version.load(std::memory_order_acquire);
+	    version_t ver = version.load(std::memory_order_acquire);
 		uint32_t lockGenId;
 		uint32_t verLock;
 
