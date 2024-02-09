@@ -7,56 +7,65 @@
 #include "pmem.h"
 
 template <typename T>
-class pptr {
-    public:
-	    //TEST
-        pptr() noexcept : rawPtr{} {}
-        pptr(int poolId, unsigned long offset){
-            rawPtr = ((unsigned long)poolId) << 48 | offset;
+class pptr
+{
+public:
+    // TEST
+    pptr() noexcept : rawPtr{} {}
+    pptr(int poolId, unsigned long offset)
+    {
+        rawPtr = ((unsigned long)poolId) << 48 | offset;
+    }
+    T *operator->()
+    {
+        int poolId = (rawPtr & MASK_POOL) >> 48;
+        void *baseAddr = PMem::getBaseOf(poolId);
+        unsigned long offset = rawPtr & MASK;
+        return (T *)((unsigned long)baseAddr + offset);
+    }
 
-        }
-        T *operator->() {
-           int poolId = (rawPtr&MASK_POOL) >> 48;
-           void *baseAddr = PMem::getBaseOf(poolId); 
-	   unsigned long offset = rawPtr & MASK;
-	   return (T *)((unsigned long)baseAddr + offset);
-        }
-
-        T *getVaddr() {
-	   unsigned long offset = rawPtr & MASK;
-	   if(offset == 0){
-               return nullptr;
-		}
-
-           int poolId = (rawPtr&MASK_POOL) >> 48;
-           void *baseAddr = PMem::getBaseOf(poolId); 
-
-	   return (T *)((unsigned long)baseAddr + offset);
-        }
-	
-        unsigned long getRawPtr() {
-		return rawPtr;
+    T *getVaddr()
+    {
+        unsigned long offset = rawPtr & MASK;
+        if (offset == 0)
+        {
+            return nullptr;
         }
 
-        unsigned long setRawPtr(void *p) {
-		rawPtr = (unsigned long)p;
-        }
+        int poolId = (rawPtr & MASK_POOL) >> 48;
+        void *baseAddr = PMem::getBaseOf(poolId);
 
-	inline void markDirty(){
-//		rawPtr= ((1UL << 61) | rawPtr);
-	}
+        return (T *)((unsigned long)baseAddr + offset);
+    }
 
-	bool isDirty(){
-//		return (((1UL << 61) & rawPtr)==(1UL<<61));
-	    return false;
-	}
+    unsigned long getRawPtr()
+    {
+        return rawPtr;
+    }
 
-	inline void markClean(){
-//		rawPtr= (rawPtr&MASK_DIRTY);
-	}
+    unsigned long setRawPtr(void *p)
+    {
+        rawPtr = (unsigned long)p;
+    }
 
-    private:
-        unsigned long rawPtr; // 16b + 48 b // nvm
+    inline void markDirty()
+    {
+        //		rawPtr= ((1UL << 61) | rawPtr);
+    }
+
+    bool isDirty()
+    {
+        //		return (((1UL << 61) & rawPtr)==(1UL<<61));
+        return false;
+    }
+
+    inline void markClean()
+    {
+        //		rawPtr= (rawPtr&MASK_DIRTY);
+    }
+
+private:
+    unsigned long rawPtr; // 16b + 48 b // nvm
 };
 
 #endif

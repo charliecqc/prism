@@ -25,16 +25,16 @@ AddressTable::AddressTable(const char *path, unsigned int at_num) {
     /* Create a pmem file and memory map it */
     if ((pmem_addr = pmem_map_file(path, MTS_AT_SIZE, PMEM_FILE_CREATE, 
 		    0666, &mapped_len, &is_pmem)) == NULL) {
-	ts_trace(TS_ERROR, "pmem_map_file\n");
-	exit(EXIT_FAILURE);
+	    ts_trace(TS_ERROR, "pmem_map_file\n");
+	    exit(EXIT_FAILURE);
     }
 
     /* Assign mapped pmem_addr */
     at_starting_addr = (at_entry_t *)pmem_addr;
 
     if(at_starting_addr == MAP_FAILED) {
-	ts_trace(TS_ERROR, "mmap failed\n");
-	exit(EXIT_FAILURE);
+	    ts_trace(TS_ERROR, "mmap failed\n");
+	    exit(EXIT_FAILURE);
     }
 
     free_at_offset_list = new std::list<uint64_t>;
@@ -73,20 +73,20 @@ uint64_t AddressTable::get_empty_at_offset() {
     uint64_t at_offset;
 
     if(!whole_file_written) {
-	at_offset = next_empty_at_offset++;
-
-	while(is_empty(at_offset) == false) {
 	    at_offset = next_empty_at_offset++;
-	}
 
-	if(next_empty_at_offset == MTS_AT_ENTRY_NUM) 
-	    whole_file_written = true;
-    } else {
-	ts_trace(TS_ERROR, "[AT_get_empty_at_offset] %d\n", free_at_offset_list->size());
-	assert(free_at_offset_list->size() > 0);
-	at_offset = free_at_offset_list->front();
-	free_at_offset_list->pop_front();
-    }
+	    while(is_empty(at_offset) == false) {
+	        at_offset = next_empty_at_offset++;
+	    }
+
+	    if(next_empty_at_offset == MTS_AT_ENTRY_NUM) 
+	        whole_file_written = true;
+        } else {
+	        ts_trace(TS_ERROR, "[AT_get_empty_at_offset] %d\n", free_at_offset_list->size());
+	        assert(free_at_offset_list->size() > 0);
+	        at_offset = free_at_offset_list->front();
+	        free_at_offset_list->pop_front();
+        }
 
     return at_offset;
 }
@@ -109,9 +109,9 @@ at_entry_t *AddressTable::assign(Key_t key) {
 
     size_t offset = get_empty_at_offset();
     if (unlikely(offset >= (MTS_AT_SIZE/MTS_AT_ENTRY_SIZE))) {
-	ts_trace(TS_ERROR, "[AT_ASSIGN] Fail to assign a addresstable entry\n");
-	spinlock.unlock();
-	exit(EXIT_FAILURE);
+	    ts_trace(TS_ERROR, "[AT_ASSIGN] Fail to assign a addresstable entry\n");
+	    spinlock.unlock();
+	    exit(EXIT_FAILURE);
     }
 
     ts_trace(TS_INFO, "[AT_ASSIGN] (at_entry_t *)mem: %p offset: %d\n", 
