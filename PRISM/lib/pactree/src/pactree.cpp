@@ -216,7 +216,69 @@ void pactreeImpl::createCombinerThread()
 {
     combinerThead = new std::thread(combinerThreadExec, totalNumaActive);
 }
+pactreeImpl *initPT_Dram(int numa)
+{
+    size_t sz = 10UL * 1024UL * 1024UL * 1024UL; // 10GB
+    int isCreated = 1;
+    int isCreated2 = 1;
+    root_obj *root = nullptr;
+    root_obj *sl_root = nullptr;
 
+    size_t sl_size = 10UL * 1024UL * 1024UL * 1024UL;
+
+#if 0
+    PMem::bind(0, sl_path, sl_size, (void **)&sl_root, &isCreated);
+    if (isCreated == 0)
+    {
+        printf("Reading Search layer from an existing pactree.\n");
+    }
+#endif
+
+    sl_root = (root_obj *)malloc(sizeof(root_obj) * sl_size);
+    if(sl_root == nullptr){
+        printf("malloc failed\n");
+        exit(1);
+    }
+#if 0
+    const char *log_path = "/mnt/pmem0/log";
+    PMem::bindLog(0, log_path, sz);
+
+    PMem::bind(1, path, sz, (void **)&root, &isCreated2);
+#endif
+    root = (root_obj *)malloc(sizeof(root_obj) * sz);
+    if(root == nullptr){
+        printf("malloc failed\n");
+        exit(1);
+    }
+
+#if 0
+    const char *path2 = "/mnt/pmem1/dl";
+    const char *sl_path2 = "/mnt/pmem1/sl";
+    const char *log_path2 = "/mnt/pmem1/log";
+    root_obj *root2 = nullptr;
+    root_obj *sl_root2 = nullptr;
+    PMem::bind(3, sl_path2, sl_size, (void **)&sl_root2, &isCreated);
+    PMem::bind(4, path2, sz, (void **)&root2, &isCreated);
+    PMem::bindLog(1, log_path2, sz);
+#endif
+    if (isCreated2 == 0)
+    {
+        pactreeImpl *pt = (pactreeImpl *)pmemobj_direct(root->ptr[0]);
+        pt->init(numa, sl_root);
+        return pt;
+    }
+    pactreeImpl *pt = (pactreeImpl *)new pactreeImpl(numa, sl_root);
+
+#if 0
+    PMEMobjpool *pop = (PMEMobjpool *)PMem::getBaseOf(1);
+    int ret = pmemobj_alloc(pop, &(root->ptr[0]), sizeof(pactreeImpl), 0, NULL, NULL);
+    void *rootVaddr = pmemobj_direct(root->ptr[0]);
+    pactreeImpl *pt = (pactreeImpl *)new (rootVaddr) pactreeImpl(numa, sl_root);
+    flushToNVM((char *)root, sizeof(root_obj));
+    smp_wmb();
+#endif
+    return pt;
+}
 pactreeImpl *initPT(int numa)
 {
     const char *path = "/mnt/pmem0/dl";

@@ -58,4 +58,5 @@ public:
 
 
 pactreeImpl *initPT(int numa);
+pactreeImpl *initPT_Dram(int numa);
 #endif //pactree_H

@@ -10,7 +10,7 @@ private:
     pactreeImpl *pt;
 public:
     pactree(int numa) {
-        pt = initPT(numa);
+        pt = initPT_Dram(numa);
         //hl = new HydraListImpl(numa);
     }
     ~pactree() {
