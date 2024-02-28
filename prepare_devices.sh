@@ -8,13 +8,13 @@
 #ipmctl create -goal persistentmemorytype=appdirect
 #ipmctl create -goal persistentmemorytype=appdirectnotinterleaved
 
-if [ $EUID -ne 0 ]; then
+if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" 
     exit 1
 fi
 
 #Disable hyperthreading
-for i in $(seq 40 80); do
+for i in $(seq 32 63); do
     echo 0 > /sys/devices/system/cpu/cpu$i/online
 done
 
@@ -22,7 +22,7 @@ done
 echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo
 echo 0 > /proc/sys/kernel/numa_balancing
 systemctl disable ondemand
-for i in $(seq 0 80); do
+for i in $(seq 0 63); do
     echo "performance" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
 done
 

@@ -21,8 +21,8 @@
 *.smod
 
 # Compiled Static libraries
-*.lai
-*.la
+*.lai 
+*.la 
 *.a
 *.lib
 *.log
@@ -36,11 +36,14 @@ worload
 # PRISM
 *.out
 *.trace
+*.data
+*.old
 tests/*
 tags
 cscope.files
 competitors
 device_manager
+workload
 git_clean.sh
 artifact_evaluation/result/*
 .vscode/*

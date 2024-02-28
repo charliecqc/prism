@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(MTS)
 
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-pthread -Wall -Wextra -march=native")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wno-class-memaccess -Wno-attributes -Wno-unused-parameter -Wno-unused-value -Wno-packed-not-aligned -Wno-unused-variable -Wno-address-of-packed-member -mprfchw -Wno-unused-function")

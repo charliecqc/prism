@@ -48,7 +48,7 @@
 
 /* io_uring */
 #define W_QD 4
-#define R_QD 64
+#define R_QD 100
 #define GC_QD 8
 #define IO_URING_WRITE	    1
 #define IO_URING_READ	    1
@@ -57,7 +57,7 @@
 #define IO_URING_WRING_NUM MTS_THREAD_NUM
 #define IO_URING_RRING_NUM MTS_THREAD_NUM
 #define IO_URING_SRING_NUM MTS_THREAD_NUM
-#define IO_COMPLETER_NUM 8
+#define IO_COMPLETER_NUM 12
 
 /* DRAM Cache */
 #define MTS_DRAMCACHE 1

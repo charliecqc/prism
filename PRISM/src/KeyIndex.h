@@ -10,7 +10,7 @@ class PACTREEIndex {
 	pactree *idx;
     public:
 	PACTREEIndex() {
-	    idx = new pactree(1);
+	    idx = new pactree(2);
 	}
 	~PACTREEIndex() {
 	    delete idx;

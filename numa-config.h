@@ -1,6 +1,6 @@
 enum {
     NUM_SOCKET = 2,
-    NUM_PHYSICAL_CPU_PER_SOCKET = 20,
+    NUM_PHYSICAL_CPU_PER_SOCKET = 16,
     SMT_LEVEL = 1,
 };
 
@@ -16,77 +16,61 @@ const int OS_CPU_ID[NUM_SOCKET][NUM_PHYSICAL_CPU_PER_SOCKET][SMT_LEVEL] = {
           3,     },
         { /* physical cpu id: 4 */
           4,     },
-        { /* physical cpu id: 8 */
+        { /* physical cpu id: 5 */
           5,     },
-        { /* physical cpu id: 9 */
+        { /* physical cpu id: 6 */
           6,     },
-        { /* physical cpu id: 10 */
+        { /* physical cpu id: 7 */
           7,     },
-        { /* physical cpu id: 11 */
+        { /* physical cpu id: 8 */
           8,     },
-        { /* physical cpu id: 12 */
+        { /* physical cpu id: 9 */
           9,     },
-        { /* physical cpu id: 16 */
+        { /* physical cpu id: 10 */
           10,     },
-        { /* physical cpu id: 17 */
+        { /* physical cpu id: 11 */
           11,     },
-        { /* physical cpu id: 18 */
+        { /* physical cpu id: 12 */
           12,     },
-        { /* physical cpu id: 19 */
+        { /* physical cpu id: 13 */
           13,     },
-        { /* physical cpu id: 20 */
+        { /* physical cpu id: 14 */
           14,     },
-        { /* physical cpu id: 24 */
+        { /* physical cpu id: 15 */
           15,     },
-        { /* physical cpu id: 25 */
-          16,     },
-        { /* physical cpu id: 26 */
-          17,     },
-        { /* physical cpu id: 27 */
-          18,     },
-        { /* physical cpu id: 28 */
-          19,     },
     },
     { /* socket id: 1 */
         { /* physical cpu id: 0 */
-          20,     },
+          16,     },
         { /* physical cpu id: 1 */
-          21,     },
+          17,     },
         { /* physical cpu id: 2 */
-          22,     },
+          18,     },
         { /* physical cpu id: 3 */
-          23,     },
+          19,     },
         { /* physical cpu id: 4 */
-          24,     },
+          20,     },
+        { /* physical cpu id: 5 */
+          21,     },
+        { /* physical cpu id: 6 */
+          22,     },
+        { /* physical cpu id: 7 */
+          23,     },
         { /* physical cpu id: 8 */
-          25,     },
+          24,     },
         { /* physical cpu id: 9 */
-          26,     },
+          25,     },
         { /* physical cpu id: 10 */
-          27,     },
+          26,     },
         { /* physical cpu id: 11 */
-          28,     },
+          27,     },
         { /* physical cpu id: 12 */
+          28,     },
+        { /* physical cpu id: 13 */
           29,     },
-        { /* physical cpu id: 16 */
+        { /* physical cpu id: 14 */
           30,     },
-        { /* physical cpu id: 17 */
+        { /* physical cpu id: 15 */
           31,     },
-        { /* physical cpu id: 18 */
-          32,     },
-        { /* physical cpu id: 19 */
-          33,     },
-        { /* physical cpu id: 20 */
-          34,     },
-        { /* physical cpu id: 24 */
-          35,     },
-        { /* physical cpu id: 25 */
-          36,     },
-        { /* physical cpu id: 26 */
-          37,     },
-        { /* physical cpu id: 27 */
-          38,     },
-        { /* physical cpu id: 28 */
-          39,     },
     },
 };
