@@ -30,7 +30,10 @@
 *.exe
 *.out
 *.app
-worload
+*.data
+*.old
+*.log
+workload
 
 # PRISM
 *.out
