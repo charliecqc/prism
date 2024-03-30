@@ -24,26 +24,30 @@ namespace ART_ROWEX
 
         pptr<OpStruct> ologPtr;
         PMEMoid oid;
-        PMem::alloc(0, sizeof(OpStruct), (void **)&ologPtr, &oid);
-        OpStruct *olog = ologPtr.getVaddr();
+
+        PMem::dram_alloc(0, sizeof(OpStruct), (void **)&ologPtr, &oid);
+        //OpStruct *olog = ologPtr.getVaddr();
+        
+        OpStruct *olog = reinterpret_cast<OpStruct*>(ologPtr.getRawPtr());
+        
         pptr<N> nRootPtr;
         // PMem::alloc(0,sizeof(N256),(void **)&nRootPtr);
-        PMem::alloc(0, sizeof(N256), (void **)&nRootPtr, &(olog->newNodeOid));
+        PMem::dram_alloc(0, sizeof(N256), (void **)&nRootPtr, &(olog->newNodeOid));
         // PMem::alloc(0,sizeof(N256),(void **)&nRootPtr, &(oplogs[oplogsCount].newNodeOid));
         oplogsCount = 1;
-        flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+        //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
         smp_wmb();
 
         // printf("Tree Constructor\n");
         genId = 3;
-        N256 *rootRawPtr = (N256 *)new (nRootPtr.getVaddr()) N256(0, {});
+        N256 *rootRawPtr = (N256 *)new (reinterpret_cast<void*>(nRootPtr.getRawPtr())) N256(0, {});
 
-        flushToNVM((char *)rootRawPtr, sizeof(N256));
+        //flushToNVM((char *)rootRawPtr, sizeof(N256));
         smp_wmb();
         this->loadKey = loadKey;
         root = nRootPtr;
         //	mtable.initialize();
-        flushToNVM((char *)this, sizeof(Tree));
+        //flushToNVM((char *)this, sizeof(Tree));
         smp_wmb();
     }
 
@@ -126,7 +130,7 @@ namespace ART_ROWEX
         pptr<N> nextNodePtr = root;
 
         N *node = nullptr;
-        N *nextNode = (N *)root.getVaddr();
+        N *nextNode = (N *)root.getRawPtr();
         N *parentNode = nullptr;
         pptr<N> nodePtr;
         pptr<N> parentPtr;
@@ -187,7 +191,7 @@ namespace ART_ROWEX
                 PMem::alloc(poolId, sizeof(N4), (void **)&newNodePtr, &(oplogs[oplogsCount].newNodeOid));
 
                 oplogsCount++;
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
                 N4 *newNode = (N4 *)new (newNodePtr.getVaddr()) N4(nextLevel, prefi);
 
@@ -196,7 +200,7 @@ namespace ART_ROWEX
                 // 2)  add node and (tid, *k) as children
                 newNode->insert(k[nextLevel], pTid, false);
                 newNode->insert(nonMatchingKey, nodePtr, false);
-                flushToNVM((char *)newNode, sizeof(N4));
+                //flushToNVM((char *)newNode, sizeof(N4));
                 smp_wmb();
 
                 // 3) lockVersionOrRestart, update parentNode to point to the new node, unlock
@@ -220,7 +224,7 @@ namespace ART_ROWEX
 
                 oplogsCount = 0;
                 // oplogsCount.store(0);
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
                 node->writeUnlock();
                 return true;
@@ -247,7 +251,7 @@ namespace ART_ROWEX
                 N::insertAndUnlock(node, parentNode, parentKey, nodeKey, pTid, epocheInfo, needRestart, &oplogs[oplogsCount], genId);
                 oplogsCount = 0;
                 // oplogsCount.store(0);
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
                 if (needRestart)
                     goto restart;
@@ -270,7 +274,7 @@ namespace ART_ROWEX
                     N::change(node, k[level], pTid);
                     oplogsCount = 0;
                     //	oplogsCount.store(0);
-                    flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                    //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                     smp_wmb();
                     node->writeUnlock();
                     return false;
@@ -304,7 +308,7 @@ namespace ART_ROWEX
                 PMem::alloc(poolId, sizeof(N4), (void **)&n4Ptr, &(oplogs[oplogsCount].newNodeOid));
                 oplogsCount++;
                 // PMem::++;
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
 
                 N4 *n4 = (N4 *)new (n4Ptr.getVaddr()) N4(level + prefixLength, &k[level], prefixLength);
@@ -312,14 +316,14 @@ namespace ART_ROWEX
 
                 n4->insert(k[level + prefixLength], pTid, false);
                 n4->insert(key[level + prefixLength], nextNodePtr, false);
-                flushToNVM((char *)n4, sizeof(N4));
+                //flushToNVM((char *)n4, sizeof(N4));
                 smp_wmb();
                 N::change(node, k[level - 1], n4Ptr);
                 oplogs[oplogsCount].op = OpStruct::done;
 
                 oplogsCount = 0;
                 //		        oplogsCount.store(0);
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
                 node->writeUnlock();
 
@@ -407,7 +411,7 @@ namespace ART_ROWEX
                 ;
                 PMem::alloc(poolId, sizeof(N4), (void **)&newNodePtr, &(oplogs[oplogsCount].newNodeOid));
                 oplogsCount++;
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
 
                 N4 *newNode = (N4 *)new (newNodePtr.getVaddr()) N4(nextLevel, prefi);
@@ -418,7 +422,7 @@ namespace ART_ROWEX
 
                 newNode->insert(k[nextLevel], pTid, false);
                 newNode->insert(nonMatchingKey, nodePtr, false);
-                flushToNVM((char *)newNode, sizeof(N4));
+                //flushToNVM((char *)newNode, sizeof(N4));
                 smp_wmb();
 
                 // 3) lockVersionOrRestart, update parentNode to point to the new node, unlock
@@ -440,7 +444,7 @@ namespace ART_ROWEX
 
                 oplogsCount = 0;
                 // oplogsCount.store(0);
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
                 node->writeUnlock();
                 return;
@@ -468,7 +472,7 @@ namespace ART_ROWEX
                 N::insertAndUnlock(node, parentNode, parentKey, nodeKey, pTid, epocheInfo, needRestart, &oplogs[oplogsCount], genId);
                 oplogsCount = 0;
                 // oplogsCount.store(0);
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
                 if (needRestart)
                     goto restart;
@@ -496,7 +500,7 @@ namespace ART_ROWEX
                     N::change(node, k[level], pTid);
                     oplogsCount = 0;
                     //	oplogsCount.store(0);
-                    flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                    //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                     smp_wmb();
                     node->writeUnlock();
                     return;
@@ -533,7 +537,7 @@ namespace ART_ROWEX
                 PMem::alloc(poolId, sizeof(N4), (void **)&n4Ptr, &(oplogs[oplogsCount].newNodeOid));
                 oplogsCount++;
                 // PMem::++;
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
 
                 N4 *n4 = (N4 *)new (n4Ptr.getVaddr()) N4(level + prefixLength, &k[level], prefixLength);
@@ -541,14 +545,14 @@ namespace ART_ROWEX
 
                 n4->insert(k[level + prefixLength], pTid, false);
                 n4->insert(key[level + prefixLength], nextNodePtr, false);
-                flushToNVM((char *)n4, sizeof(N4));
+                //flushToNVM((char *)n4, sizeof(N4));
                 smp_wmb();
                 N::change(node, k[level - 1], n4Ptr);
                 oplogs[oplogsCount].op = OpStruct::done;
 
                 oplogsCount = 0;
                 //		        oplogsCount.store(0);
-                flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
+                //flushToNVM((char *)&oplogsCount, sizeof(uint64_t));
                 smp_wmb();
                 node->writeUnlock();
                 return;

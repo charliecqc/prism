@@ -40,15 +40,17 @@ ListNode* LinkedList::initialize() {
     OpStruct* oplog = (OpStruct *)PMem::getOpLog(0);
 
     PMem::dram_alloc(1,sizeof(ListNode),(void **)&headPtr,&(oplog->newNodeOid));
-    ListNode* head = (ListNode*)new(headPtr.getVaddr()) ListNode();
-    flushToNVM((char*)&headPtr,sizeof(pptr<ListNode>));
+    //ListNode* head = (ListNode*)new(headPtr.getVaddr()) ListNode();
+    //flushToNVM((char*)&headPtr,sizeof(pptr<ListNode>));
+    ListNode* head = new (reinterpret_cast<void*>(headPtr.getRawPtr())) ListNode();
     smp_wmb();
 
     OpStruct *oplog2 = (OpStruct *)PMem::getOpLog(1);
 
     pptr<ListNode> tailPtr;
     PMem::dram_alloc(1,sizeof(ListNode),(void **)&tailPtr, &(oplog->newNodeOid));
-    ListNode* tail= (ListNode*)new(tailPtr.getVaddr()) ListNode();
+    //ListNode* tail= (ListNode*)new(tailPtr.getVaddr()) ListNode();
+    ListNode* tail = new (reinterpret_cast<void*>(tailPtr.getRawPtr())) ListNode(); 
 
     oplog->op=OpStruct::done;
     oplog2->op=OpStruct::done;
@@ -85,8 +87,8 @@ ListNode* LinkedList::initialize() {
     tail->setCur(tailPtr);
 
 
-    flushToNVM((char*)head,sizeof(ListNode));
-    flushToNVM((char*)tail,sizeof(ListNode));
+    //flushToNVM((char*)head,sizeof(ListNode));
+    //flushToNVM((char*)tail,sizeof(ListNode));
     smp_wmb();
 
     for(int i=0; i<5;i++){

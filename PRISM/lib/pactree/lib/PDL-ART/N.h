@@ -343,7 +343,7 @@ namespace ART_ROWEX {
 
         N256(uint32_t level, const Prefix &prefi) : N(NTypes::N256, level, prefi) {
             memset(children, '\0', sizeof(children));
-        }
+            }
 
         bool insert(uint8_t key, pptr<N> val);
         bool insert(uint8_t key, pptr<N> val, bool flush);

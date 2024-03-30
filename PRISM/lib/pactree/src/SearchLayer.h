@@ -50,8 +50,8 @@ public:
 	}
 	PDLARTIndex() {
 		if (typeid(Key_t) == typeid(uint64_t)) {
-			PMem::alloc(0,sizeof(ART_ROWEX::Tree),(void **)&idxPtr);
-			idx = new(idxPtr.getVaddr()) ART_ROWEX::Tree([] (TID tid,Key &key){
+			PMem::dram_alloc(0,sizeof(ART_ROWEX::Tree),(void **)&idxPtr);
+			idx = new(reinterpret_cast<void*>(idxPtr.getRawPtr())) ART_ROWEX::Tree([] (TID tid,Key &key){
 				key.setInt(*reinterpret_cast<uint64_t*>(tid));
 				});
         		dummy_idx = new ART_ROWEX::Tree([] (TID tid,Key &key){
@@ -60,9 +60,9 @@ public:
 		}
 		else{
 			printf("here for string\n");
-			PMem::alloc(0,sizeof(ART_ROWEX::Tree),(void **)&idxPtr);
+			PMem::dram_alloc(0,sizeof(ART_ROWEX::Tree),(void **)&idxPtr);
 
-			idx = new(idxPtr.getVaddr()) ART_ROWEX::Tree([] (TID tid,Key &key){
+			idx = new(reinterpret_cast<void*>(idxPtr.getVaddr())) ART_ROWEX::Tree([] (TID tid,Key &key){
 	               key.set(reinterpret_cast<char*>(tid), KEYLENGTH);
 					});
 				

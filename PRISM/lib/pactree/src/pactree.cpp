@@ -504,17 +504,19 @@ bool pactreeImpl::remove(Key_t &key)
 
 SearchLayer *pactreeImpl::createSearchLayer(root_obj *root, int threadId)
 {
-    if (pmemobj_direct(root->ptr[threadId]) == nullptr)
+    if (root->ptr[threadId].off == 0)
     {
         pptr<SearchLayer> sPtr;
-        PMem::alloc(0, sizeof(SearchLayer), (void **)&sPtr, &(root->ptr[threadId]));
-        SearchLayer *s = new (sPtr.getVaddr()) SearchLayer();
+        PMem::dram_alloc(0, sizeof(SearchLayer), (void **)&sPtr, &(root->ptr[threadId]));
+        //SearchLayer *s = new (sPtr.getVaddr()) SearchLayer();
+        SearchLayer* s = new (reinterpret_cast<void*>(sPtr.getRawPtr())) SearchLayer();
         // fprintf(stderr,"PDLART_alloc_size %d\n", sizeof(ART_ROWEX::Tree)); // YJ
         return s;
     }
     else
     {
-        SearchLayer *s = (SearchLayer *)pmemobj_direct(root->ptr[threadId]);
+        //SearchLayer *s = (SearchLayer *)pmemobj_direct(root->ptr[threadId]);
+        SearchLayer* s = new (reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(root->ptr[threadId].off))) SearchLayer();
         s->init();
         return s;
     }

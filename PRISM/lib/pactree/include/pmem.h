@@ -31,6 +31,16 @@ class PMem {
 			return baseAddresses[poolId];
 		}
 		static bool alloc(int poolId, size_t size, void **p) {
+			
+			/**p = malloc(size);
+
+			if(*p == nullptr){
+				std::cerr<<"alloc error"<<std::endl;	
+				return false;
+			}
+			return true;*/	
+			
+			
 			// allocate a size memory from pool_id
 			// and store/persist address to *p
 			// return true on succeed
@@ -49,7 +59,25 @@ class PMem {
 			return true;
 		}
 
+		static bool dram_alloc(int poolId, size_t size, void **p) {
+			*p = malloc(size);
+
+			if(*p == nullptr){
+				std::cerr<<"alloc error"<<std::endl;	
+				return false;
+			}
+			return true;
+		}
+
 		static bool alloc(int poolId, size_t size, void **p, PMEMoid *oid) {
+			/**p = malloc(size);
+
+			if(*p == nullptr){
+				std::cerr<<"alloc error"<<std::endl;	
+				return false;
+			}
+			return true;*/
+			
 			// allocate a size memory from pool_id
 			// and store/persist address to *p
 			// return true on succeed
